@@ -21,6 +21,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const inlineTerminalLogs = {}; // Store terminal outputs per serviceId
     const inlineTerminalVisible = {}; // Store open state per serviceId
 
+    function getAuthToken() {
+        return localStorage.getItem('vps_session_token') || '';
+    }
+
+    async function authFetch(url, options = {}) {
+        const token = getAuthToken();
+        options.headers = options.headers || {};
+        if (token) {
+            options.headers['Authorization'] = `Bearer ${token}`;
+        }
+        options.credentials = 'same-origin';
+        return fetch(url, options);
+    }
+
     if (vpsHostname) {
         vpsHostname.textContent = window.location.hostname || 'Server Connected';
     }
@@ -29,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function checkAuthStatus() {
         try {
-            const res = await fetch('/manager/api/auth/check');
+            const res = await authFetch('/manager/api/auth/check');
             const data = await res.json();
             if (data.authenticated) {
                 showDashboard();
@@ -57,6 +71,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (res.ok) {
+                const data = await res.json();
+                if (data.token) {
+                    localStorage.setItem('vps_session_token', data.token);
+                }
                 passwordInput.value = '';
                 showDashboard();
             } else {
@@ -70,7 +88,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     logoutBtn.addEventListener('click', async () => {
-        await fetch('/manager/api/auth/logout', { method: 'POST' });
+        await authFetch('/manager/api/auth/logout', { method: 'POST' });
+        localStorage.removeItem('vps_session_token');
         showLogin();
     });
 
@@ -120,7 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchSystemStats() {
         try {
-            const res = await fetch('/manager/api/system');
+            const res = await authFetch('/manager/api/system');
             if (!res.ok) return;
             const data = await res.json();
 
@@ -189,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchProcessList() {
         try {
             processTableBody.innerHTML = '<tr><td colspan="6" class="text-center">Loading processes...</td></tr>';
-            const res = await fetch('/manager/api/processes');
+            const res = await authFetch('/manager/api/processes');
             if (!res.ok) return;
             runningProcessesData = await res.json();
             renderProcessTable();
@@ -244,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
         try {
-            const res = await fetch('/manager/api/services');
+            const res = await authFetch('/manager/api/services');
             if (!res.ok) return;
             const services = await res.json();
             renderServices(services);
@@ -453,7 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let isSuccess = false;
         try {
-            const res = await fetch(`/manager/api/services/${serviceId}/${action}`, {
+            const res = await authFetch(`/manager/api/services/${serviceId}/${action}`, {
                 method: 'POST'
             });
 

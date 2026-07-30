@@ -6,10 +6,23 @@ import datetime
 SECRET_KEY = "vps-manager-jwt-secret-key-2026"
 ALGORITHM = "HS256"
 
-# Default password 'admin-oracle-2026' SHA256 if .env is missing
-DEFAULT_HASH = "811f07f59a0f5896a23b08e5c10ad828b8e05c5be5b4bf3e7bcf527d2c3df4cf"
+# Default password 'admin-oracle-2026' SHA256
+DEFAULT_HASH = "115aeac5c863e09ff7e13f3709dd8fe779ff114e7a796244b0abe58c810c4610"
 
 def get_admin_hash():
+    env_paths = ["/home/ubuntu/vps-manager/.env", "/app/.env"]
+    for path in env_paths:
+        if os.path.exists(path):
+            try:
+                with open(path, "r") as f:
+                    for line in f:
+                        if line.startswith("ADMIN_PASSWORD_HASH="):
+                            val = line.split("=", 1)[1].strip()
+                            if val:
+                                return val
+            except Exception:
+                pass
+
     env_hash = os.getenv("ADMIN_PASSWORD_HASH")
     if env_hash and env_hash.strip():
         return env_hash.strip()

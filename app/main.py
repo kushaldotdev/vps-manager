@@ -14,19 +14,27 @@ STATIC_DIR = os.path.join(BASE_DIR, "static")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 def check_auth(request: Request):
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ", 1)[1].strip()
+        if verify_session_token(token):
+            return
+
     token = request.cookies.get("vps_session")
-    if not token or not verify_session_token(token):
-        raise HTTPException(status_code=401, detail="Unauthorized")
+    if token and verify_session_token(token):
+        return
+
+    raise HTTPException(status_code=401, detail="Unauthorized")
 
 @app.post("/api/auth/login")
 async def login(password: str = Form(...)):
     if verify_password(password):
         token = create_session_token()
-        response = JSONResponse({"status": "success"})
+        response = JSONResponse({"status": "success", "token": token})
         response.set_cookie(
             key="vps_session",
             value=token,
-            httponly=True,
+            httponly=False,
             samesite="lax",
             path="/",
             max_age=86400
@@ -42,9 +50,16 @@ async def logout():
 
 @app.get("/api/auth/check")
 async def check_session(request: Request):
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ", 1)[1].strip()
+        if verify_session_token(token):
+            return {"authenticated": True}
+
     token = request.cookies.get("vps_session")
     if token and verify_session_token(token):
         return {"authenticated": True}
+
     return {"authenticated": False}
 
 @app.get("/api/system", dependencies=[Depends(check_auth)])
