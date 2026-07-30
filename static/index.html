@@ -45,7 +45,7 @@
                 <span class="status-indicator online"></span>
                 <span class="status-text">140.238.245.42</span>
             </div>
-            <button id="logout-btn" class="btn btn-sm btn-outline">Logout</button>
+            <button type="button" id="logout-btn" class="btn btn-sm btn-outline">Logout</button>
         </header>
 
         <!-- Main Content Area -->
@@ -102,7 +102,7 @@
             <section class="section-container">
                 <div class="section-header">
                     <h3 class="section-title">Hosted Services</h3>
-                    <button id="refresh-services-btn" class="btn btn-sm btn-secondary">🔄 Refresh Status</button>
+                    <button type="button" id="refresh-services-btn" class="btn btn-sm btn-secondary">🔄 Refresh Status</button>
                 </div>
                 
                 <div id="services-grid" class="services-grid">
@@ -118,13 +118,13 @@
         <div class="modal-card glass-panel">
             <div class="modal-header">
                 <h4 id="modal-title">Action Console</h4>
-                <button id="close-modal-btn" class="modal-close">&times;</button>
+                <button type="button" id="close-modal-btn" class="modal-close">&times;</button>
             </div>
             <div class="modal-body">
                 <pre id="terminal-output" class="terminal-box">Waiting for execution output...</pre>
             </div>
             <div class="modal-footer">
-                <button id="modal-done-btn" class="btn btn-secondary" disabled>Executing...</button>
+                <button type="button" id="modal-done-btn" class="btn btn-secondary" disabled>Executing...</button>
             </div>
         </div>
     </div>

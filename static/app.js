@@ -139,7 +139,6 @@ document.addEventListener('DOMContentLoaded', () => {
             card.className = 'glass-card service-card';
 
             const isRunning = svc.status === 'Running';
-            const badgeClass = isRunning ? 'online' : 'offline';
 
             card.innerHTML = `
                 <div>
@@ -156,10 +155,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
                 <div class="service-actions">
-                    ${!isRunning ? `<button class="btn btn-sm btn-primary action-btn" data-id="${svc.id}" data-action="start">Start</button>` : ''}
-                    ${isRunning ? `<button class="btn btn-sm btn-danger action-btn" data-id="${svc.id}" data-action="stop">Stop</button>` : ''}
-                    <button class="btn btn-sm btn-warning action-btn" data-id="${svc.id}" data-action="restart">Restart</button>
-                    <button class="btn btn-sm btn-secondary action-btn" data-id="${svc.id}" data-action="update">🔄 Update</button>
+                    ${!isRunning ? `<button type="button" class="btn btn-sm btn-primary action-btn" data-id="${svc.id}" data-action="start">Start</button>` : ''}
+                    ${isRunning ? `<button type="button" class="btn btn-sm btn-danger action-btn" data-id="${svc.id}" data-action="stop">Stop</button>` : ''}
+                    <button type="button" class="btn btn-sm btn-warning action-btn" data-id="${svc.id}" data-action="restart">Restart</button>
+                    <button type="button" class="btn btn-sm btn-secondary action-btn" data-id="${svc.id}" data-action="update">🔄 Update</button>
                 </div>
             `;
             grid.appendChild(card);
