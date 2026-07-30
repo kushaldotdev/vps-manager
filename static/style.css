@@ -328,13 +328,27 @@ body {
 .services-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-    gap: 20px;
+    gap: 24px;
 }
 
 .service-card {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    padding: 22px 24px;
+    background: rgba(18, 22, 31, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 12px;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+    position: relative;
+}
+
+.service-card:hover {
+    border-color: rgba(56, 189, 248, 0.35);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px -5px rgba(56, 189, 248, 0.15), 0 0 18px rgba(56, 189, 248, 0.08);
 }
 
 .service-card-header {
@@ -342,29 +356,32 @@ body {
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 12px;
+    gap: 12px;
 }
 
 .service-name {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     font-weight: 700;
+    letter-spacing: -0.01em;
 }
 
 .service-desc {
-    font-size: 0.82rem;
+    font-size: 0.83rem;
     color: var(--text-secondary);
     margin-top: 4px;
+    line-height: 1.35;
 }
 
 .service-info-meta {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    font-size: 0.82rem;
+    gap: 10px;
+    font-size: 0.83rem;
     color: var(--text-secondary);
-    margin: 14px 0 18px 0;
-    padding: 10px 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    margin: 14px 0 20px 0;
+    padding: 14px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .service-url-link {
@@ -378,12 +395,13 @@ body {
 .service-actions {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
+    margin-top: auto;
 }
 
 .service-actions-primary {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     flex-wrap: wrap;
     align-items: center;
 }

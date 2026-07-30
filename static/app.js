@@ -300,9 +300,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const isCardActive = Boolean(activeAction);
 
             let updateBtnHtml = '';
-            if (svc.update_available) {
+            if (svc.type === 'docker' || svc.type === 'compose_dir' || svc.update_available) {
                 const isUpdatingThis = activeAction === 'update';
-                updateBtnHtml = `<button type="button" class="btn btn-sm btn-accent action-btn ${isCardActive ? 'disabled-btn' : ''}" data-id="${svc.id}" data-action="update" ${isCardActive ? 'disabled' : ''}>${isUpdatingThis ? '<span class="btn-spinner"></span> UPDATING...' : '⚡ Update'}</button>`;
+                const activeClass = svc.update_available ? 'btn-update-active' : 'btn-outline';
+                updateBtnHtml = `<button type="button" class="btn btn-sm ${activeClass} action-btn ${isCardActive ? 'disabled-btn' : ''}" data-id="${svc.id}" data-action="update" ${isCardActive ? 'disabled' : ''}>${isUpdatingThis ? '<span class="btn-spinner"></span> UPDATING...' : '⚡ Update'}</button>`;
             }
 
             const githubHtml = svc.github_url ? `<div><strong style="color:var(--text-primary)">Repository:</strong> <a href="${svc.github_url}" target="_blank" class="service-url-link">🐙 GitHub Repo ↗</a></div>` : '';
@@ -332,6 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     <div class="service-info-meta">
                         <div><strong style="color:var(--text-primary)">Version:</strong> <code>${svc.version || 'v1.0.0'}</code></div>
+                        <div><strong style="color:var(--text-primary)">Last Updated:</strong> <code>${svc.last_updated || 'N/A'}</code></div>
                         <div><strong style="color:var(--text-primary)">Ports:</strong> ${svc.ports}</div>
                         <div><strong style="color:var(--text-primary)">URL:</strong> ${canVisit ? `<a href="${fullUrl}" target="_blank" class="service-url-link">${fullUrl} ↗</a>` : '<code>N/A</code>'}</div>
                         ${githubHtml}
