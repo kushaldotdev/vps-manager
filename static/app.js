@@ -293,8 +293,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const isRunning = svc.status.toLowerCase().startsWith('up');
             const portStr = svc.ports ? svc.ports.split('->')[0] : '';
             const hostPort = portStr.split(':')[1] || portStr;
-            const fullUrl = `http://140.238.245.42/9router/`;
-            const canVisit = svc.id === '9router';
+            const fullUrl = (svc.full_url && svc.full_url.startsWith('http')) 
+                ? svc.full_url 
+                : (svc.url_path && svc.url_path !== '#' ? `${window.location.origin}${svc.url_path}` : '');
+            const canVisit = Boolean(fullUrl && svc.url_path !== '#');
 
             const activeAction = activeActions[svc.id];
             const isCardActive = Boolean(activeAction);

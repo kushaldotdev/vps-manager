@@ -348,7 +348,7 @@ def get_services_status(host_domain: str = ""):
 
     if "nginx" not in registered_ids:
         ngx_stats = get_systemd_stats("nginx")
-        is_ngx_active = (ngx_stats["pids"] != "-") or check_port_open(["10.0.0.188", "140.238.245.42", "172.17.0.1", "127.0.0.1"], 80)
+        is_ngx_active = (ngx_stats["pids"] != "-") or check_port_open(["127.0.0.1", "localhost"], 80)
         if not is_ngx_active:
             res_ngx = subprocess.run("systemctl is-active nginx", shell=True, capture_output=True, text=True).stdout.strip()
             is_ngx_active = (res_ngx == "active")
@@ -591,7 +591,7 @@ def get_services_status(host_domain: str = ""):
 
     if "nginx" not in registered_ids:
         ngx_stats = get_systemd_stats("nginx")
-        is_ngx_active = (ngx_stats["pids"] != "-") or check_port_open(["10.0.0.188", "140.238.245.42", "172.17.0.1", "127.0.0.1"], 80)
+        is_ngx_active = (ngx_stats["pids"] != "-") or check_port_open(["127.0.0.1", "localhost"], 80)
         if not is_ngx_active:
             res_ngx = subprocess.run("systemctl is-active nginx", shell=True, capture_output=True, text=True).stdout.strip()
             is_ngx_active = (res_ngx == "active")
