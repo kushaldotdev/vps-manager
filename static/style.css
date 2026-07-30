@@ -124,12 +124,13 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 10px 18px;
-    font-size: 0.9rem;
+    padding: 8px 14px;
+    font-size: 0.85rem;
     font-weight: 600;
     border-radius: 8px;
     border: none;
     cursor: pointer;
+    text-decoration: none;
     transition: background-color 0.2s, opacity 0.2s;
 }
 
@@ -159,6 +160,26 @@ body {
     color: #fff;
 }
 .btn-warning:hover { background-color: #b45309; }
+
+.btn-update-active {
+    background-color: #f59e0b;
+    color: #000;
+    font-weight: 700;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+.btn-uptodate {
+    background-color: rgba(52, 211, 153, 0.15);
+    color: var(--accent-green);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+}
 
 .btn-outline {
     background: transparent;
@@ -306,7 +327,7 @@ body {
 
 .services-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
     gap: 20px;
 }
 
@@ -336,18 +357,29 @@ body {
 
 .service-info-meta {
     display: flex;
-    gap: 16px;
+    flex-direction: column;
+    gap: 8px;
     font-size: 0.82rem;
     color: var(--text-secondary);
-    margin: 14px 0 20px 0;
-    padding-top: 10px;
+    margin: 14px 0 18px 0;
+    padding: 10px 0;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
+
+.service-url-link {
+    color: var(--accent-blue);
+    text-decoration: none;
+    word-break: break-all;
+}
+
+.service-url-link:hover { text-decoration: underline; }
 
 .service-actions {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+    align-items: center;
 }
 
 /* Modal */

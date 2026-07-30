@@ -51,8 +51,9 @@ async def api_system_stats():
     return get_system_stats()
 
 @app.get("/api/services", dependencies=[Depends(check_auth)])
-async def api_services():
-    return get_services_status()
+async def api_services(request: Request):
+    host_domain = request.headers.get("host", "")
+    return get_services_status(host_domain=host_domain)
 
 @app.post("/api/services/{service_id}/{action}", dependencies=[Depends(check_auth)])
 async def api_service_action(service_id: str, action: str):

@@ -35,9 +35,33 @@ def get_system_stats():
         "boot_time": boot_time
     }
 
-def get_services_status():
+def get_git_info(repo_dir: str):
+    try:
+        if not (os.path.exists(repo_dir) and os.path.exists(os.path.join(repo_dir, ".git"))):
+            return "v1.0.0", False
+        
+        cmd_ver = f"cd {repo_dir} && git log -1 --format='%h (%cr)'"
+        version_str = subprocess.run(cmd_ver, shell=True, capture_output=True, text=True).stdout.strip()
+        if not version_str:
+            version_str = "v1.0.0"
+            
+        # Fetch remote status silently
+        subprocess.run(f"cd {repo_dir} && git fetch --quiet", shell=True, timeout=5, capture_output=True)
+        
+        local_hash = subprocess.run(f"cd {repo_dir} && git rev-parse HEAD", shell=True, capture_output=True, text=True).stdout.strip()
+        remote_hash = subprocess.run(f"cd {repo_dir} && git rev-parse @{{u}}", shell=True, capture_output=True, text=True).stdout.strip()
+        
+        has_update = bool(local_hash and remote_hash and local_hash != remote_hash)
+        return version_str, has_update
+    except Exception:
+        return "v1.0.0", False
+
+def get_services_status(host_domain: str = ""):
     services = []
     registered_ids = set()
+
+    # Base protocol + host domain
+    base_url = f"http://{host_domain}" if host_domain else ""
 
     # 1. Dynamic Auto-Discovery of Docker Containers
     try:
@@ -57,10 +81,20 @@ def get_services_status():
 
                     status = "Running" if "Up" in c_status_str else "Stopped"
                     
-                    # Custom URL route mapping if known, else default /<c_name>/
+                    # Custom URL route mapping
                     route_path = f"/{c_name}/"
                     if c_name == "gcli2api":
                         route_path = "/gcli/"
+                    elif c_name == "9router":
+                        route_path = "/9router/"
+
+                    full_url = f"{base_url}{route_path}" if base_url else route_path
+
+                    # Version & Update check
+                    project_dir = f"/home/ubuntu/{c_name}"
+                    version_str, update_avail = get_git_info(project_dir)
+                    if version_str == "v1.0.0" and "latest" in c_image:
+                        version_str = "latest"
 
                     services.append({
                         "id": c_name,
@@ -69,13 +103,16 @@ def get_services_status():
                         "status": status,
                         "type": "docker",
                         "url_path": route_path,
-                        "ports": c_ports or "Internal"
+                        "full_url": full_url,
+                        "ports": c_ports or "Internal",
+                        "version": version_str,
+                        "update_available": update_avail
                     })
                     registered_ids.add(c_name)
     except Exception:
         pass
 
-    # 2. Dynamic Auto-Discovery of Host Directories (/home/ubuntu/*) with Git or Compose
+    # 2. Dynamic Auto-Discovery of Host Directories (/home/ubuntu/*)
     user_home_folders = glob.glob("/home/ubuntu/*")
     for folder in user_home_folders:
         if os.path.isdir(folder):
@@ -87,14 +124,19 @@ def get_services_status():
             has_git = os.path.exists(os.path.join(folder, ".git"))
 
             if (has_compose or has_git) and folder_name not in registered_ids:
+                version_str, update_avail = get_git_info(folder)
+                route_path = f"/{folder_name}/"
                 services.append({
                     "id": folder_name,
                     "name": folder_name,
                     "description": f"Git / Compose Project ({folder})",
                     "status": "Stopped",
                     "type": "compose_dir",
-                    "url_path": f"/{folder_name}/",
-                    "ports": "Host Project"
+                    "url_path": route_path,
+                    "full_url": f"{base_url}{route_path}" if base_url else route_path,
+                    "ports": "Host Project",
+                    "version": version_str,
+                    "update_available": update_avail
                 })
                 registered_ids.add(folder_name)
 
@@ -110,7 +152,10 @@ def get_services_status():
             "status": status_wg,
             "type": "systemd",
             "url_path": "#",
-            "ports": "51820 (UDP)"
+            "full_url": "#",
+            "ports": "51820 (UDP)",
+            "version": "1.0.x",
+            "update_available": False
         })
 
     if "nginx" not in registered_ids:
@@ -124,7 +169,10 @@ def get_services_status():
             "status": status_ngx,
             "type": "systemd",
             "url_path": "/",
-            "ports": "80"
+            "full_url": f"{base_url}/" if base_url else "/",
+            "ports": "80",
+            "version": "1.24.0",
+            "update_available": False
         })
 
     return services
@@ -136,23 +184,23 @@ async def stream_action(service_id: str, action: str):
 
     if action == "start":
         if has_compose:
-            cmd = f"cd {project_dir} && docker compose up -d"
+            cmd = f"cd {project_dir} && (docker compose up -d || docker-compose up -d)"
         else:
             cmd = f"docker start {service_id}"
     elif action == "stop":
         if has_compose:
-            cmd = f"cd {project_dir} && docker compose stop"
+            cmd = f"cd {project_dir} && (docker compose stop || docker-compose stop)"
         else:
             cmd = f"docker stop {service_id}"
     elif action == "restart":
         if has_compose:
-            cmd = f"cd {project_dir} && docker compose restart"
+            cmd = f"cd {project_dir} && (docker compose restart || docker-compose restart)"
         else:
             cmd = f"docker restart {service_id}"
     elif action == "update":
         if has_dir and os.path.exists(os.path.join(project_dir, ".git")):
             if has_compose:
-                cmd = f"cd {project_dir} && git pull && docker compose down && docker compose up -d --build"
+                cmd = f"cd {project_dir} && git pull && (docker compose down || docker-compose down) && (docker compose up -d --build || docker-compose up -d --build)"
             else:
                 cmd = f"cd {project_dir} && git pull"
         else:

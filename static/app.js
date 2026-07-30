@@ -144,6 +144,16 @@ document.addEventListener('DOMContentLoaded', () => {
             card.className = 'glass-card service-card';
 
             const isRunning = svc.status === 'Running';
+            const fullUrl = svc.full_url.startsWith('http') ? svc.full_url : `${window.location.origin}${svc.url_path}`;
+            const canVisit = svc.url_path && svc.url_path !== '#';
+
+            // Smart Update Button rendering
+            let updateBtnHtml = '';
+            if (svc.update_available) {
+                updateBtnHtml = `<button type="button" class="btn btn-sm btn-update-active action-btn" data-id="${svc.id}" data-action="update">⚡ Update Available</button>`;
+            } else {
+                updateBtnHtml = `<button type="button" class="btn btn-sm btn-uptodate action-btn" data-id="${svc.id}" data-action="update" title="Click to Force Update">✓ Up to Date</button>`;
+            }
 
             card.innerHTML = `
                 <div>
@@ -155,15 +165,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="badge ${isRunning ? 'badge-accent' : 'btn-outline'}">${svc.status}</span>
                     </div>
                     <div class="service-info-meta">
-                        <span><strong style="color:var(--text-primary)">Ports:</strong> ${svc.ports}</span>
-                        <span><strong style="color:var(--text-primary)">Route:</strong> <code>${svc.url_path}</code></span>
+                        <div><strong style="color:var(--text-primary)">Version:</strong> <code>${svc.version || 'v1.0.0'}</code></div>
+                        <div><strong style="color:var(--text-primary)">Ports:</strong> ${svc.ports}</div>
+                        <div><strong style="color:var(--text-primary)">URL:</strong> ${canVisit ? `<a href="${fullUrl}" target="_blank" class="service-url-link">${fullUrl}</a>` : '<code>N/A</code>'}</div>
                     </div>
                 </div>
                 <div class="service-actions">
+                    ${canVisit && isRunning ? `<a href="${fullUrl}" target="_blank" class="btn btn-sm btn-primary">🌐 Visit App</a>` : ''}
                     ${!isRunning ? `<button type="button" class="btn btn-sm btn-primary action-btn" data-id="${svc.id}" data-action="start">Start</button>` : ''}
                     ${isRunning ? `<button type="button" class="btn btn-sm btn-danger action-btn" data-id="${svc.id}" data-action="stop">Stop</button>` : ''}
                     <button type="button" class="btn btn-sm btn-warning action-btn" data-id="${svc.id}" data-action="restart">Restart</button>
-                    <button type="button" class="btn btn-sm btn-secondary action-btn" data-id="${svc.id}" data-action="update">🔄 Update</button>
+                    ${updateBtnHtml}
                 </div>
             `;
             grid.appendChild(card);
