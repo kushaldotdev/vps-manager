@@ -328,9 +328,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Event listeners for service action buttons
         document.querySelectorAll('.action-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const id = e.target.getAttribute('data-id');
-                const action = e.target.getAttribute('data-action');
-                triggerServiceAction(id, action);
+                const targetBtn = e.target.closest('.action-btn');
+                const id = targetBtn.getAttribute('data-id');
+                const action = targetBtn.getAttribute('data-action');
+                triggerServiceAction(id, action, targetBtn);
             });
         });
 
@@ -370,12 +371,43 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    async function triggerServiceAction(serviceId, action) {
+    function showToast(type, message) {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type} glass-panel`;
+        const icon = type === 'success' ? '✓' : '⚠️';
+        toast.innerHTML = `<span class="toast-icon">${icon}</span> <span class="toast-msg">${message}</span>`;
+
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.classList.add('toast-fade-out');
+            setTimeout(() => toast.remove(), 400);
+        }, 4000);
+    }
+
+    async function triggerServiceAction(serviceId, action, clickedBtn) {
         const termElement = document.getElementById(`inline-terminal-${serviceId}`);
         const termBox = document.getElementById(`terminal-box-${serviceId}`);
 
         if (termElement) termElement.classList.remove('hidden');
         inlineTerminalVisible[serviceId] = true;
+
+        const cardButtons = clickedBtn ? clickedBtn.closest('.service-card')?.querySelectorAll('.action-btn') : [];
+        const origBtnHtml = clickedBtn ? clickedBtn.innerHTML : '';
+
+        if (cardButtons) {
+            cardButtons.forEach(b => {
+                b.disabled = true;
+                b.classList.add('disabled-btn');
+            });
+        }
+
+        if (clickedBtn) {
+            clickedBtn.innerHTML = `<span class="btn-spinner"></span> ${action.toUpperCase()}...`;
+        }
 
         const initMsg = `\n[$ Executing ${action.toUpperCase()} for ${serviceId}...]\n`;
         if (termBox) {
@@ -407,6 +439,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            if (res.ok) {
+                const actionTitle = action.charAt(0).toUpperCase() + action.slice(1);
+                showToast('success', `${serviceId} ${actionTitle} complete!`);
+            } else {
+                showToast('error', `${serviceId} ${action} failed.`);
+            }
+
             fetchServices();
             fetchSystemStats();
         } catch (e) {
@@ -415,6 +454,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (termBox) {
                 termBox.textContent = inlineTerminalLogs[serviceId];
                 termBox.scrollTop = termBox.scrollHeight;
+            }
+            showToast('error', `Error executing ${action} on ${serviceId}`);
+        } finally {
+            if (cardButtons) {
+                cardButtons.forEach(b => {
+                    b.disabled = false;
+                    b.classList.remove('disabled-btn');
+                });
+            }
+            if (clickedBtn) {
+                clickedBtn.innerHTML = origBtnHtml;
             }
         }
     }
