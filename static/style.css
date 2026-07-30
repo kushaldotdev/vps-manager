@@ -377,9 +377,25 @@ body {
 
 .service-actions {
     display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.service-actions-primary {
+    display: flex;
     gap: 8px;
     flex-wrap: wrap;
     align-items: center;
+}
+
+.service-actions-secondary {
+    display: flex;
+    width: 100%;
+}
+
+.service-actions-secondary .btn {
+    width: 100%;
+    justify-content: center;
 }
 
 /* Modal */

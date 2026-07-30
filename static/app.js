@@ -322,11 +322,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
 
                 <div class="service-actions">
-                    ${startBtnHtml}
-                    ${stopBtnHtml}
-                    ${restartBtnHtml}
-                    ${updateBtnHtml}
-                    ${logsBtnHtml}
+                    <div class="service-actions-primary">
+                        ${startBtnHtml}
+                        ${stopBtnHtml}
+                        ${restartBtnHtml}
+                        ${updateBtnHtml}
+                    </div>
+                    <div class="service-actions-secondary">
+                        ${logsBtnHtml}
+                    </div>
                 </div>
 
                 <!-- Inline Console / Log Panel -->
