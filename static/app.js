@@ -291,10 +291,12 @@ document.addEventListener('DOMContentLoaded', () => {
             card.className = 'service-card glass-panel';
             
             const isRunning = svc.status.toLowerCase().startsWith('up');
-            const portStr = svc.ports ? svc.ports.split('->')[0] : '';
-            const hostPort = portStr.split(':')[1] || portStr;
-            const fullUrl = `http://140.238.245.42/9router/`;
-            const canVisit = svc.id === '9router';
+            const host = window.location.host || '140.238.245.42';
+            const proto = window.location.protocol || 'http:';
+            const fullUrl = (svc.full_url && svc.full_url.startsWith('http'))
+                ? svc.full_url
+                : (svc.url_path && svc.url_path !== '#' ? `${proto}//${host}${svc.url_path}` : '');
+            const canVisit = Boolean(fullUrl && svc.url_path !== '#');
 
             const activeAction = activeActions[svc.id];
             const isCardActive = Boolean(activeAction);
