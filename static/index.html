@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPS Control Panel & Infrastructure Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/manager/static/style.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-container" class="login-wrapper">
+        <div class="login-card glass-panel">
+            <div class="brand-header">
+                <div class="brand-icon">⚡</div>
+                <h2>Oracle VPS Manager</h2>
+                <p>Infrastructure Control Panel</p>
+            </div>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="password">Admin Password</label>
+                    <input type="password" id="password" placeholder="Enter SSH Admin Password" required autocomplete="current-password">
+                </div>
+                <div id="login-error" class="alert-banner hidden"></div>
+                <button type="submit" id="login-btn" class="btn btn-primary btn-block">Authenticate</button>
+            </form>
+            <div class="security-note">
+                🔒 Password changes are restricted to SSH terminal only (<code>./set-password.sh</code>).
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Screen -->
+    <div id="dashboard-container" class="dashboard-wrapper hidden">
+        <!-- Top Navbar -->
+        <header class="navbar glass-panel">
+            <div class="nav-brand">
+                <span class="brand-icon">⚡</span>
+                <span class="brand-title">VPS Manager</span>
+                <span class="badge badge-accent">OCI Noble</span>
+            </div>
+            <div class="nav-status">
+                <span class="status-indicator online"></span>
+                <span class="status-text">140.238.245.42</span>
+            </div>
+            <button id="logout-btn" class="btn btn-sm btn-outline">Logout</button>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- System Health Overview Cards -->
+            <section class="section-container">
+                <h3 class="section-title">System Metrics</h3>
+                <div class="metrics-grid">
+                    <div class="metric-card glass-card">
+                        <div class="metric-header">
+                            <span class="metric-label">CPU Utilization</span>
+                            <span id="cpu-value" class="metric-value">0%</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div id="cpu-bar" class="progress-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card glass-card">
+                        <div class="metric-header">
+                            <span class="metric-label">RAM (RSS / Total)</span>
+                            <span id="ram-value" class="metric-value">0 / 0 MB</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div id="ram-bar" class="progress-bar-fill warning" style="width: 0%"></div>
+                        </div>
+                        <div id="ram-avail-text" class="metric-subtext">Available: 0 MB</div>
+                    </div>
+
+                    <div class="metric-card glass-card">
+                        <div class="metric-header">
+                            <span class="metric-label">Disk Storage</span>
+                            <span id="disk-value" class="metric-value">0 / 0 GB</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div id="disk-bar" class="progress-bar-fill success" style="width: 0%"></div>
+                        </div>
+                        <div id="disk-subtext" class="metric-subtext">Free: 0 GB</div>
+                    </div>
+
+                    <div class="metric-card glass-card">
+                        <div class="metric-header">
+                            <span class="metric-label">Swap File</span>
+                            <span id="swap-value" class="metric-value">0 / 0 MB</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div id="swap-bar" class="progress-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Hosted Services Controls -->
+            <section class="section-container">
+                <div class="section-header">
+                    <h3 class="section-title">Hosted Services</h3>
+                    <button id="refresh-services-btn" class="btn btn-sm btn-secondary">🔄 Refresh Status</button>
+                </div>
+                
+                <div id="services-grid" class="services-grid">
+                    <!-- Service Cards dynamically inserted here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Live Terminal Log Modal -->
+    <div id="log-modal" class="modal-wrapper hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-card glass-panel">
+            <div class="modal-header">
+                <h4 id="modal-title">Action Console</h4>
+                <button id="close-modal-btn" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <pre id="terminal-output" class="terminal-box">Waiting for execution output...</pre>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-done-btn" class="btn btn-secondary" disabled>Executing...</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/manager/static/app.js"></script>
+</body>
+</html>

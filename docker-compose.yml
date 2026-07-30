@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  vps-manager:
+    build: .
+    container_name: vps-manager
+    restart: unless-stopped
+    ports:
+      - "9999:9999"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /home/ubuntu:/home/ubuntu
+      - /etc/wireguard:/etc/wireguard
+      - /etc/nginx:/etc/nginx
+    env_file:
+      - .env
