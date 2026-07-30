@@ -5,6 +5,7 @@ services:
     build: .
     container_name: vps-manager
     restart: unless-stopped
+    pid: "host"
     ports:
       - "9999:9999"
     volumes:

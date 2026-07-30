@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.auth import verify_password, create_session_token, verify_session_token
-from app.executor import get_system_stats, get_services_status, stream_action
+from app.executor import get_system_stats, get_services_status, stream_action, get_process_list
 
 app = FastAPI(title="Oracle VPS Control Panel")
 
@@ -49,6 +49,10 @@ async def check_session(request: Request):
 @app.get("/api/system", dependencies=[Depends(check_auth)])
 async def api_system_stats():
     return get_system_stats()
+
+@app.get("/api/processes", dependencies=[Depends(check_auth)])
+async def api_processes():
+    return get_process_list()
 
 @app.get("/api/services", dependencies=[Depends(check_auth)])
 async def api_services(request: Request):

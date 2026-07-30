@@ -62,6 +62,8 @@
                         <div class="progress-bar-bg">
                             <div id="cpu-bar" class="progress-bar-fill" style="width: 0%"></div>
                         </div>
+                        <div id="cpu-model-text" class="metric-subtext">CPU: Loading...</div>
+                        <div id="cpu-load-text" class="metric-subtext">Load: 0.00, 0.00, 0.00</div>
                     </div>
 
                     <div class="metric-card glass-card">
@@ -72,7 +74,10 @@
                         <div class="progress-bar-bg">
                             <div id="ram-bar" class="progress-bar-fill warning" style="width: 0%"></div>
                         </div>
-                        <div id="ram-avail-text" class="metric-subtext">Available: 0 MB</div>
+                        <div class="metric-footer-row">
+                            <div id="ram-avail-text" class="metric-subtext">Available: 0 MB</div>
+                            <button type="button" id="view-processes-btn" class="btn btn-xs btn-outline">📊 View Processes</button>
+                        </div>
                     </div>
 
                     <div class="metric-card glass-card">
@@ -94,6 +99,7 @@
                         <div class="progress-bar-bg">
                             <div id="swap-bar" class="progress-bar-fill" style="width: 0%"></div>
                         </div>
+                        <div id="swap-subtext" class="metric-subtext">Swap Used: 0%</div>
                     </div>
                 </div>
             </section>
@@ -106,25 +112,43 @@
                 </div>
                 
                 <div id="services-grid" class="services-grid">
-                    <!-- Service Cards dynamically inserted here -->
+                    <div class="services-loader-card glass-card">
+                        <div class="spinner"></div>
+                        <span>Scanning & Loading Hosted Services...</span>
+                    </div>
                 </div>
             </section>
         </main>
     </div>
 
-    <!-- Live Terminal Log Modal -->
-    <div id="log-modal" class="modal-wrapper hidden">
+    <!-- Running Processes Modal -->
+    <div id="process-modal" class="modal-wrapper hidden">
         <div class="modal-backdrop"></div>
-        <div class="modal-card glass-panel">
+        <div class="modal-card glass-panel modal-lg">
             <div class="modal-header">
-                <h4 id="modal-title">Action Console</h4>
-                <button type="button" id="close-modal-btn" class="modal-close">&times;</button>
+                <h4>📊 Running System Processes</h4>
+                <button type="button" id="close-process-modal-btn" class="modal-close">&times;</button>
             </div>
-            <div class="modal-body">
-                <pre id="terminal-output" class="terminal-box">Waiting for execution output...</pre>
+            <div class="process-filter-bar">
+                <input type="text" id="process-search-input" placeholder="🔍 Search process name or user..." class="form-input">
+                <button type="button" id="refresh-processes-btn" class="btn btn-sm btn-secondary">🔄 Refresh</button>
             </div>
-            <div class="modal-footer">
-                <button type="button" id="modal-done-btn" class="btn btn-secondary" disabled>Executing...</button>
+            <div class="modal-body table-responsive">
+                <table class="process-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable-th" data-sort="pid">PID <span class="sort-icon" id="sort-icon-pid"></span></th>
+                            <th class="sortable-th" data-sort="name">Process Name <span class="sort-icon" id="sort-icon-name"></span></th>
+                            <th class="sortable-th" data-sort="user">User <span class="sort-icon" id="sort-icon-user"></span></th>
+                            <th class="sortable-th" data-sort="cpu_percent">CPU % <span class="sort-icon" id="sort-icon-cpu_percent"></span></th>
+                            <th class="sortable-th active-sort" data-sort="ram_mb">RAM (MB) <span class="sort-icon" id="sort-icon-ram_mb">▼</span></th>
+                            <th class="sortable-th" data-sort="ram_percent">RAM % <span class="sort-icon" id="sort-icon-ram_percent"></span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="process-table-body">
+                        <tr><td colspan="6" class="text-center">Loading running processes...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
