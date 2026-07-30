@@ -272,8 +272,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    const inlineTerminalLogs = {};
-    const inlineTerminalVisible = {};
     const activeActions = {};
 
     function scrollTerminalToBottom(box) {
