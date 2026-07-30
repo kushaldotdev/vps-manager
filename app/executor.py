@@ -122,41 +122,63 @@ def clean_github_url(url: str) -> str:
 def get_git_info(repo_dir: str, service_id: str = ""):
     github_url = KNOWN_GITHUB_MAP.get(service_id, "")
     
-    if not repo_dir or not os.path.exists(repo_dir) or not os.path.isdir(repo_dir):
-        return "latest", False, github_url
+    # 1. Host directory with .git repository
+    if repo_dir and os.path.exists(repo_dir) and os.path.isdir(repo_dir):
+        git_dir = os.path.join(repo_dir, ".git")
+        if os.path.exists(git_dir):
+            try:
+                remote_url_cmd = f"git -C '{repo_dir}' remote get-url origin"
+                remote_url_out = subprocess.run(remote_url_cmd, shell=True, capture_output=True, text=True).stdout.strip()
+                if remote_url_out:
+                    github_url = clean_github_url(remote_url_out)
 
-    git_dir = os.path.join(repo_dir, ".git")
-    if not os.path.exists(git_dir):
-        return "latest", False, github_url
+                cmd_ver = f"git -C '{repo_dir}' log -1 --format='%h (%cr)'"
+                version_str = subprocess.run(cmd_ver, shell=True, capture_output=True, text=True).stdout.strip()
+                if not version_str:
+                    version_str = "v1.0.0"
 
-    try:
-        remote_url_cmd = f"git -C '{repo_dir}' remote get-url origin"
-        remote_url_out = subprocess.run(remote_url_cmd, shell=True, capture_output=True, text=True).stdout.strip()
-        if remote_url_out:
-            github_url = clean_github_url(remote_url_out)
+                local_hash = subprocess.run(f"git -C '{repo_dir}' rev-parse HEAD", shell=True, capture_output=True, text=True).stdout.strip()
 
-        cmd_ver = f"git -C '{repo_dir}' log -1 --format='%h (%cr)'"
-        version_str = subprocess.run(cmd_ver, shell=True, capture_output=True, text=True).stdout.strip()
-        if not version_str:
-            version_str = "v1.0.0"
+                has_update = False
+                remote_out = subprocess.run(f"git -C '{repo_dir}' ls-remote origin HEAD refs/heads/main refs/heads/master", shell=True, timeout=6, capture_output=True, text=True).stdout.strip()
+                if remote_out:
+                    for line in remote_out.splitlines():
+                        parts = line.split()
+                        if len(parts) >= 1:
+                            r_hash = parts[0]
+                            if r_hash and not local_hash.startswith(r_hash) and not r_hash.startswith(local_hash):
+                                has_update = True
+                                break
 
-        local_hash = subprocess.run(f"git -C '{repo_dir}' rev-parse HEAD", shell=True, capture_output=True, text=True).stdout.strip()
+                return version_str, has_update, github_url
+            except Exception:
+                pass
 
-        has_update = False
-        # Fetch remote ref hash check
-        remote_out = subprocess.run(f"git -C '{repo_dir}' ls-remote origin HEAD refs/heads/main refs/heads/master", shell=True, timeout=6, capture_output=True, text=True).stdout.strip()
-        if remote_out:
-            for line in remote_out.splitlines():
-                parts = line.split()
-                if len(parts) >= 1:
-                    r_hash = parts[0]
-                    if r_hash and not local_hash.startswith(r_hash) and not r_hash.startswith(local_hash):
-                        has_update = True
-                        break
+    # 2. Docker container without host .git repository (e.g. 9router)
+    if service_id:
+        try:
+            cmd_inspect = f"docker inspect {service_id} --format '{{{{index .Config.Labels \"org.opencontainers.image.revision\"}}}}'"
+            c_hash = subprocess.run(cmd_inspect, shell=True, capture_output=True, text=True).stdout.strip()
+            
+            c_ver = f"{c_hash[:7]}" if c_hash else "latest"
 
-        return version_str, has_update, github_url
-    except Exception as e:
-        return "v1.0.0", False, github_url
+            if github_url:
+                target_url = github_url if github_url.endswith(".git") else f"{github_url}.git"
+                remote_cmd = f"git ls-remote {target_url} HEAD refs/heads/main refs/heads/master"
+                r_out = subprocess.run(remote_cmd, shell=True, timeout=6, capture_output=True, text=True).stdout.strip()
+                if r_out:
+                    for line in r_out.splitlines():
+                        parts = line.split()
+                        if len(parts) >= 1:
+                            r_hash = parts[0]
+                            if c_hash and r_hash and not r_hash.startswith(c_hash) and not c_hash.startswith(r_hash):
+                                return f"{c_ver}", True, github_url
+
+            return c_ver, False, github_url
+        except Exception:
+            pass
+
+    return "latest", False, github_url
 
 def get_docker_stats_map():
     stats_map = {}
