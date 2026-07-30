@@ -1,3 +1,5 @@
+import os
+import glob
 import subprocess
 import psutil
 import json
@@ -35,122 +37,143 @@ def get_system_stats():
 
 def get_services_status():
     services = []
-    
-    # 1. 9Router
-    cmd_9r = "docker ps -a --filter name=9router --format '{{.Status}}|{{.Image}}|{{.Ports}}'"
-    res_9r = subprocess.run(cmd_9r, shell=True, capture_output=True, text=True).stdout.strip()
-    status_9r = "Stopped"
-    if res_9r and "Up" in res_9r:
-        status_9r = "Running"
-    services.append({
-        "id": "9router",
-        "name": "9Router",
-        "description": "LLM Router & Gateway Proxy",
-        "status": status_9r,
-        "type": "docker",
-        "url_path": "/9router/",
-        "ports": "20129 -> 20128"
-    })
+    registered_ids = set()
 
-    # 2. gcli2api
-    cmd_gcli = "docker ps -a --filter name=gcli2api --format '{{.Status}}|{{.Image}}|{{.Ports}}'"
-    res_gcli = subprocess.run(cmd_gcli, shell=True, capture_output=True, text=True).stdout.strip()
-    status_gcli = "Stopped"
-    if res_gcli and "Up" in res_gcli:
-        status_gcli = "Running"
-    services.append({
-        "id": "gcli2api",
-        "name": "gcli2api",
-        "description": "Gemini CLI Proxy API Service",
-        "status": status_gcli,
-        "type": "docker",
-        "url_path": "/gcli/",
-        "ports": "7861 (Host)"
-    })
+    # 1. Dynamic Auto-Discovery of Docker Containers
+    try:
+        cmd_docker = "docker ps -a --format '{{.Names}}|{{.Status}}|{{.Image}}|{{.Ports}}'"
+        out_docker = subprocess.run(cmd_docker, shell=True, capture_output=True, text=True).stdout.strip()
+        if out_docker:
+            for line in out_docker.splitlines():
+                parts = line.split("|")
+                if len(parts) >= 3:
+                    c_name = parts[0].strip()
+                    c_status_str = parts[1].strip()
+                    c_image = parts[2].strip()
+                    c_ports = parts[3].strip() if len(parts) > 3 else "Internal"
 
-    # 3. WireGuard
-    cmd_wg = "systemctl is-active wg-quick@wg0"
-    res_wg = subprocess.run(cmd_wg, shell=True, capture_output=True, text=True).stdout.strip()
-    status_wg = "Running" if res_wg == "active" else "Stopped"
-    services.append({
-        "id": "wireguard",
-        "name": "WireGuard VPN",
-        "description": "Kernel-Space WireGuard VPN Tunnel",
-        "status": status_wg,
-        "type": "systemd",
-        "url_path": "#",
-        "ports": "51820 (UDP)"
-    })
+                    if c_name in ["vps-manager"]:
+                        continue
 
-    # 4. Nginx Web Proxy
-    cmd_ngx = "systemctl is-active nginx"
-    res_ngx = subprocess.run(cmd_ngx, shell=True, capture_output=True, text=True).stdout.strip()
-    status_ngx = "Running" if res_ngx == "active" else "Stopped"
-    services.append({
-        "id": "nginx",
-        "name": "Nginx Web Proxy",
-        "description": "Port 80 Reverse Proxy Router",
-        "status": status_ngx,
-        "type": "systemd",
-        "url_path": "/",
-        "ports": "80"
-    })
+                    status = "Running" if "Up" in c_status_str else "Stopped"
+                    
+                    # Custom URL route mapping if known, else default /<c_name>/
+                    route_path = f"/{c_name}/"
+                    if c_name == "gcli2api":
+                        route_path = "/gcli/"
+
+                    services.append({
+                        "id": c_name,
+                        "name": c_name,
+                        "description": f"Docker Container ({c_image})",
+                        "status": status,
+                        "type": "docker",
+                        "url_path": route_path,
+                        "ports": c_ports or "Internal"
+                    })
+                    registered_ids.add(c_name)
+    except Exception:
+        pass
+
+    # 2. Dynamic Auto-Discovery of Host Directories (/home/ubuntu/*) with Git or Compose
+    user_home_folders = glob.glob("/home/ubuntu/*")
+    for folder in user_home_folders:
+        if os.path.isdir(folder):
+            folder_name = os.path.basename(folder)
+            if folder_name in ["vps-manager"]:
+                continue
+            
+            has_compose = os.path.exists(os.path.join(folder, "docker-compose.yml")) or os.path.exists(os.path.join(folder, "docker-compose.yaml"))
+            has_git = os.path.exists(os.path.join(folder, ".git"))
+
+            if (has_compose or has_git) and folder_name not in registered_ids:
+                services.append({
+                    "id": folder_name,
+                    "name": folder_name,
+                    "description": f"Git / Compose Project ({folder})",
+                    "status": "Stopped",
+                    "type": "compose_dir",
+                    "url_path": f"/{folder_name}/",
+                    "ports": "Host Project"
+                })
+                registered_ids.add(folder_name)
+
+    # 3. Systemd Services (WireGuard & Nginx)
+    if "wireguard" not in registered_ids:
+        cmd_wg = "systemctl is-active wg-quick@wg0"
+        res_wg = subprocess.run(cmd_wg, shell=True, capture_output=True, text=True).stdout.strip()
+        status_wg = "Running" if res_wg == "active" else "Stopped"
+        services.append({
+            "id": "wireguard",
+            "name": "WireGuard VPN",
+            "description": "Kernel-Space WireGuard VPN Tunnel",
+            "status": status_wg,
+            "type": "systemd",
+            "url_path": "#",
+            "ports": "51820 (UDP)"
+        })
+
+    if "nginx" not in registered_ids:
+        cmd_ngx = "systemctl is-active nginx"
+        res_ngx = subprocess.run(cmd_ngx, shell=True, capture_output=True, text=True).stdout.strip()
+        status_ngx = "Running" if res_ngx == "active" else "Stopped"
+        services.append({
+            "id": "nginx",
+            "name": "Nginx Web Proxy",
+            "description": "Port 80 Reverse Proxy Router",
+            "status": status_ngx,
+            "type": "systemd",
+            "url_path": "/",
+            "ports": "80"
+        })
 
     return services
 
 async def stream_action(service_id: str, action: str):
-    if service_id == "gcli2api":
-        if action == "start":
-            cmd = "docker start gcli2api"
-        elif action == "stop":
-            cmd = "docker stop gcli2api"
-        elif action == "restart":
-            cmd = "docker restart gcli2api"
-        elif action == "update":
-            cmd = "cd /home/ubuntu/gcli2api && git pull origin main && docker compose down && docker compose up -d --build"
-        else:
-            yield f"Unknown action: {action}\n"
-            return
-            
-    elif service_id == "9router":
-        if action == "start":
-            cmd = "docker start 9router"
-        elif action == "stop":
-            cmd = "docker stop 9router"
-        elif action == "restart":
-            cmd = "docker restart 9router"
-        elif action == "update":
-            cmd = "docker pull ghcr.io/decolua/9router:latest && docker stop 9router && docker rm 9router && docker run -d --name 9router --restart unless-stopped -p 20129:20128 -v 9router-data:/app/data -e NODE_ENV=production -e PORT=20128 -e HOSTNAME=0.0.0.0 ghcr.io/decolua/9router:latest"
-        else:
-            yield f"Unknown action: {action}\n"
-            return
+    project_dir = f"/home/ubuntu/{service_id}"
+    has_dir = os.path.exists(project_dir) and os.path.isdir(project_dir)
+    has_compose = has_dir and (os.path.exists(os.path.join(project_dir, "docker-compose.yml")) or os.path.exists(os.path.join(project_dir, "docker-compose.yaml")))
 
-    elif service_id == "wireguard":
+    if action == "start":
+        if has_compose:
+            cmd = f"cd {project_dir} && docker compose up -d"
+        else:
+            cmd = f"docker start {service_id}"
+    elif action == "stop":
+        if has_compose:
+            cmd = f"cd {project_dir} && docker compose stop"
+        else:
+            cmd = f"docker stop {service_id}"
+    elif action == "restart":
+        if has_compose:
+            cmd = f"cd {project_dir} && docker compose restart"
+        else:
+            cmd = f"docker restart {service_id}"
+    elif action == "update":
+        if has_dir and os.path.exists(os.path.join(project_dir, ".git")):
+            if has_compose:
+                cmd = f"cd {project_dir} && git pull && docker compose down && docker compose up -d --build"
+            else:
+                cmd = f"cd {project_dir} && git pull"
+        else:
+            cmd = f"docker pull $(docker inspect --format '{{{{.Config.Image}}}}' {service_id} 2>/dev/null || echo '{service_id}') && docker restart {service_id}"
+
+    # Handle systemd exceptions
+    if service_id == "wireguard":
         if action in ["start", "restart"]:
             cmd = "systemctl enable --now wg-quick@wg0"
         elif action == "stop":
             cmd = "systemctl disable --now wg-quick@wg0"
         elif action == "update":
             cmd = "apt-get update && apt-get install --only-upgrade -y wireguard wireguard-tools"
-        else:
-            yield f"Unknown action: {action}\n"
-            return
 
     elif service_id == "nginx":
         if action == "start":
             cmd = "systemctl start nginx"
         elif action == "stop":
             cmd = "systemctl stop nginx"
-        elif action == "restart":
-            cmd = "systemctl reload nginx"
-        elif action == "update":
+        elif action in ["restart", "update"]:
             cmd = "nginx -t && systemctl reload nginx"
-        else:
-            yield f"Unknown action: {action}\n"
-            return
-    else:
-        yield f"Unknown service: {service_id}\n"
-        return
 
     yield f"Executing: {cmd}\n----------------------------------------\n"
     
