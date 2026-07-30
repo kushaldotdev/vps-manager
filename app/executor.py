@@ -36,20 +36,22 @@ def get_system_stats():
     }
 
 def get_git_info(repo_dir: str):
+    if not repo_dir or not os.path.exists(repo_dir) or not os.path.isdir(repo_dir):
+        return "latest", False
+    git_dir = os.path.join(repo_dir, ".git")
+    if not os.path.exists(git_dir):
+        return "latest", False
+    
     try:
-        if not (os.path.exists(repo_dir) and os.path.exists(os.path.join(repo_dir, ".git"))):
-            return "v1.0.0", False
-        
-        cmd_ver = f"cd {repo_dir} && git log -1 --format='%h (%cr)'"
+        cmd_ver = f"git -C '{repo_dir}' log -1 --format='%h (%cr)'"
         version_str = subprocess.run(cmd_ver, shell=True, capture_output=True, text=True).stdout.strip()
         if not version_str:
             version_str = "v1.0.0"
             
-        # Fetch remote status silently
-        subprocess.run(f"cd {repo_dir} && git fetch --quiet", shell=True, timeout=5, capture_output=True)
+        subprocess.run(f"git -C '{repo_dir}' fetch --quiet", shell=True, timeout=2, capture_output=True)
         
-        local_hash = subprocess.run(f"cd {repo_dir} && git rev-parse HEAD", shell=True, capture_output=True, text=True).stdout.strip()
-        remote_hash = subprocess.run(f"cd {repo_dir} && git rev-parse @{{u}}", shell=True, capture_output=True, text=True).stdout.strip()
+        local_hash = subprocess.run(f"git -C '{repo_dir}' rev-parse HEAD", shell=True, capture_output=True, text=True).stdout.strip()
+        remote_hash = subprocess.run(f"git -C '{repo_dir}' rev-parse @{{u}}", shell=True, capture_output=True, text=True).stdout.strip()
         
         has_update = bool(local_hash and remote_hash and local_hash != remote_hash)
         return version_str, has_update
@@ -60,7 +62,6 @@ def get_services_status(host_domain: str = ""):
     services = []
     registered_ids = set()
 
-    # Base protocol + host domain
     base_url = f"http://{host_domain}" if host_domain else ""
 
     # 1. Dynamic Auto-Discovery of Docker Containers
@@ -93,8 +94,6 @@ def get_services_status(host_domain: str = ""):
                     # Version & Update check
                     project_dir = f"/home/ubuntu/{c_name}"
                     version_str, update_avail = get_git_info(project_dir)
-                    if version_str == "v1.0.0" and "latest" in c_image:
-                        version_str = "latest"
 
                     services.append({
                         "id": c_name,
@@ -109,8 +108,8 @@ def get_services_status(host_domain: str = ""):
                         "update_available": update_avail
                     })
                     registered_ids.add(c_name)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error in docker auto discovery: {e}")
 
     # 2. Dynamic Auto-Discovery of Host Directories (/home/ubuntu/*)
     user_home_folders = glob.glob("/home/ubuntu/*")
@@ -154,7 +153,7 @@ def get_services_status(host_domain: str = ""):
             "url_path": "#",
             "full_url": "#",
             "ports": "51820 (UDP)",
-            "version": "1.0.x",
+            "version": "v1.0.0",
             "update_available": False
         })
 
@@ -184,25 +183,25 @@ async def stream_action(service_id: str, action: str):
 
     if action == "start":
         if has_compose:
-            cmd = f"cd {project_dir} && (docker compose up -d || docker-compose up -d)"
+            cmd = f"cd '{project_dir}' && (docker compose up -d || docker-compose up -d)"
         else:
             cmd = f"docker start {service_id}"
     elif action == "stop":
         if has_compose:
-            cmd = f"cd {project_dir} && (docker compose stop || docker-compose stop)"
+            cmd = f"cd '{project_dir}' && (docker compose stop || docker-compose stop)"
         else:
             cmd = f"docker stop {service_id}"
     elif action == "restart":
         if has_compose:
-            cmd = f"cd {project_dir} && (docker compose restart || docker-compose restart)"
+            cmd = f"cd '{project_dir}' && (docker compose restart || docker-compose restart)"
         else:
             cmd = f"docker restart {service_id}"
     elif action == "update":
         if has_dir and os.path.exists(os.path.join(project_dir, ".git")):
             if has_compose:
-                cmd = f"cd {project_dir} && git pull && (docker compose down || docker-compose down) && (docker compose up -d --build || docker-compose up -d --build)"
+                cmd = f"cd '{project_dir}' && git pull && (docker compose down || docker-compose down) && (docker compose up -d --build || docker-compose up -d --build)"
             else:
-                cmd = f"cd {project_dir} && git pull"
+                cmd = f"cd '{project_dir}' && git pull"
         else:
             cmd = f"docker pull $(docker inspect --format '{{{{.Config.Image}}}}' {service_id} 2>/dev/null || echo '{service_id}') && docker restart {service_id}"
 
