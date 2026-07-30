@@ -3,7 +3,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git docker.io docker-compose-v2 curl procps \
+    git docker.io docker-compose curl procps \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy uv binary for fast package installation
