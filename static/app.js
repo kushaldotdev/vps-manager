@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginError = document.getElementById('login-error');
     const logoutBtn = document.getElementById('logout-btn');
     const refreshBtn = document.getElementById('refresh-services-btn');
+    const vpsHostname = document.getElementById('vps-hostname');
 
     const logModal = document.getElementById('log-modal');
     const terminalOutput = document.getElementById('terminal-output');
@@ -14,6 +15,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalDoneBtn = document.getElementById('modal-done-btn');
 
     let metricsInterval = null;
+
+    if (vpsHostname) {
+        vpsHostname.textContent = window.location.hostname || 'Server Connected';
+    }
 
     // Check existing auth
     checkAuthStatus();

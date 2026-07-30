@@ -15,13 +15,13 @@
         <div class="login-card glass-panel">
             <div class="brand-header">
                 <div class="brand-icon">⚡</div>
-                <h2>Oracle VPS Manager</h2>
+                <h2>VPS Manager</h2>
                 <p>Infrastructure Control Panel</p>
             </div>
             <form id="login-form">
                 <div class="form-group">
                     <label for="password">Admin Password</label>
-                    <input type="password" id="password" placeholder="Enter SSH Admin Password" required autocomplete="current-password">
+                    <input type="password" id="password" placeholder="Enter Admin Password" required autocomplete="current-password">
                 </div>
                 <div id="login-error" class="alert-banner hidden"></div>
                 <button type="submit" id="login-btn" class="btn btn-primary btn-block">Authenticate</button>
@@ -39,11 +39,11 @@
             <div class="nav-brand">
                 <span class="brand-icon">⚡</span>
                 <span class="brand-title">VPS Manager</span>
-                <span class="badge badge-accent">OCI Noble</span>
+                <span class="badge badge-accent">Server Node</span>
             </div>
             <div class="nav-status">
                 <span class="status-indicator online"></span>
-                <span class="status-text">140.238.245.42</span>
+                <span id="vps-hostname" class="status-text">Server Connected</span>
             </div>
             <button type="button" id="logout-btn" class="btn btn-sm btn-outline">Logout</button>
         </header>
