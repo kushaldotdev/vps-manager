@@ -290,7 +290,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const card = document.createElement('div');
             card.className = 'service-card glass-panel';
             
-            const isRunning = svc.status.toLowerCase().startsWith('up');
+            const statusLower = (svc.status || '').toLowerCase();
+            const isRunning = statusLower.startsWith('up') || statusLower === 'running' || statusLower.startsWith('active');
             const portStr = svc.ports ? svc.ports.split('->')[0] : '';
             const hostPort = portStr.split(':')[1] || portStr;
             const fullUrl = (svc.full_url && svc.full_url.startsWith('http')) 
