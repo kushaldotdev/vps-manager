@@ -48,12 +48,13 @@ def get_git_info(repo_dir: str):
         if not version_str:
             version_str = "v1.0.0"
             
-        subprocess.run(f"git -C '{repo_dir}' fetch --quiet", shell=True, timeout=2, capture_output=True)
-        
         local_hash = subprocess.run(f"git -C '{repo_dir}' rev-parse HEAD", shell=True, capture_output=True, text=True).stdout.strip()
-        remote_hash = subprocess.run(f"git -C '{repo_dir}' rev-parse @{{u}}", shell=True, capture_output=True, text=True).stdout.strip()
         
-        has_update = bool(local_hash and remote_hash and local_hash != remote_hash)
+        # Direct GitHub remote HEAD commit lookup
+        remote_out = subprocess.run(f"git -C '{repo_dir}' ls-remote origin HEAD", shell=True, timeout=5, capture_output=True, text=True).stdout.strip()
+        remote_hash = remote_out.split()[0] if remote_out else ""
+        
+        has_update = bool(local_hash and remote_hash and not remote_hash.startswith(local_hash))
         return version_str, has_update
     except Exception:
         return "v1.0.0", False
@@ -91,7 +92,7 @@ def get_services_status(host_domain: str = ""):
 
                     full_url = f"{base_url}{route_path}" if base_url else route_path
 
-                    # Version & Update check
+                    # Version & GitHub Update check
                     project_dir = f"/home/ubuntu/{c_name}"
                     version_str, update_avail = get_git_info(project_dir)
 
