@@ -28,6 +28,7 @@ async def login(password: str = Form(...)):
             value=token,
             httponly=True,
             samesite="lax",
+            path="/",
             max_age=86400
         )
         return response
@@ -36,7 +37,7 @@ async def login(password: str = Form(...)):
 @app.post("/api/auth/logout")
 async def logout():
     response = JSONResponse({"status": "logged_out"})
-    response.delete_cookie("vps_session")
+    response.delete_cookie("vps_session", path="/")
     return response
 
 @app.get("/api/auth/check")
