@@ -102,7 +102,7 @@ def get_process_list():
 KNOWN_GITHUB_MAP = {
     "9router": "https://github.com/decolua/9router",
     "vps-manager": "https://github.com/kushaldotdev/vps-manager",
-    "gcli2api": "https://github.com/kushaldotdev/gcli2api",
+    "gcli2api": "https://github.com/su-kaka/gcli2api",
     "wireguard": "https://github.com/WireGuard/wireguard-linux-compat",
     "nginx": "https://github.com/nginx/nginx"
 }
@@ -127,20 +127,20 @@ def get_git_info(repo_dir: str, service_id: str = ""):
         git_dir = os.path.join(repo_dir, ".git")
         if os.path.exists(git_dir):
             try:
-                remote_url_cmd = f"git -C '{repo_dir}' remote get-url origin"
+                remote_url_cmd = f"git -c safe.directory='*' -C '{repo_dir}' remote get-url origin"
                 remote_url_out = subprocess.run(remote_url_cmd, shell=True, capture_output=True, text=True).stdout.strip()
                 if remote_url_out:
                     github_url = clean_github_url(remote_url_out)
 
-                cmd_ver = f"git -C '{repo_dir}' log -1 --format='%h (%cr)'"
+                cmd_ver = f"git -c safe.directory='*' -C '{repo_dir}' log -1 --format='%h (%cr)'"
                 version_str = subprocess.run(cmd_ver, shell=True, capture_output=True, text=True).stdout.strip()
                 if not version_str:
                     version_str = "v1.0.0"
 
-                local_hash = subprocess.run(f"git -C '{repo_dir}' rev-parse HEAD", shell=True, capture_output=True, text=True).stdout.strip()
+                local_hash = subprocess.run(f"git -c safe.directory='*' -C '{repo_dir}' rev-parse HEAD", shell=True, capture_output=True, text=True).stdout.strip()
 
                 has_update = False
-                remote_out = subprocess.run(f"git -C '{repo_dir}' ls-remote origin HEAD refs/heads/main refs/heads/master", shell=True, timeout=6, capture_output=True, text=True).stdout.strip()
+                remote_out = subprocess.run(f"git -c safe.directory='*' -C '{repo_dir}' ls-remote origin HEAD refs/heads/main refs/heads/master", shell=True, timeout=6, capture_output=True, text=True).stdout.strip()
                 if remote_out:
                     for line in remote_out.splitlines():
                         parts = line.split()
@@ -401,7 +401,7 @@ def get_last_updated_time(service_id: str, repo_dir: str = ""):
 
     if repo_dir and os.path.exists(repo_dir) and os.path.exists(os.path.join(repo_dir, ".git")):
         try:
-            cmd = f"git -C '{repo_dir}' log -1 --format='%cd' --date=format:'%b %d, %Y %H:%M'"
+            cmd = f"git -c safe.directory='*' -C '{repo_dir}' log -1 --format='%cd' --date=format:'%b %d, %Y %H:%M'"
             git_date = subprocess.run(cmd, shell=True, capture_output=True, text=True).stdout.strip()
             if git_date:
                 return git_date
