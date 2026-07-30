@@ -471,6 +471,8 @@ def get_recreate_container_cmd(service_id: str) -> str:
 def get_services_status(host_domain: str = ""):
     services = []
     registered_ids = set()
+    if not host_domain:
+        host_domain = os.getenv("HOST_DOMAIN", "")
     base_url = f"http://{host_domain}" if host_domain else ""
     docker_stats = get_docker_stats_map()
 
