@@ -253,29 +253,49 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    const inlineTerminalLogs = {};
+    const inlineTerminalVisible = {};
+    const activeActions = {};
+
+    function scrollTerminalToBottom(box) {
+        if (!box) return;
+        requestAnimationFrame(() => {
+            box.scrollTop = box.scrollHeight;
+        });
+    }
+
     function renderServices(services) {
         const grid = document.getElementById('services-grid');
-        grid.innerHTML = '';
+        if (!grid) return;
 
+        grid.innerHTML = '';
         services.forEach(svc => {
             const card = document.createElement('div');
-            card.className = 'glass-card service-card';
+            card.className = 'service-card glass-panel';
+            
+            const isRunning = svc.status.toLowerCase().startsWith('up');
+            const portStr = svc.ports ? svc.ports.split('->')[0] : '';
+            const hostPort = portStr.split(':')[1] || portStr;
+            const fullUrl = `http://140.238.245.42/9router/`;
+            const canVisit = svc.id === '9router';
 
-            const isRunning = svc.status === 'Running';
-            const fullUrl = svc.full_url.startsWith('http') ? svc.full_url : `${window.location.origin}${svc.url_path}`;
-            const canVisit = svc.url_path && svc.url_path !== '#';
+            const activeAction = activeActions[svc.id];
+            const isCardActive = Boolean(activeAction);
 
             let updateBtnHtml = '';
             if (svc.update_available) {
-                updateBtnHtml = `<button type="button" class="btn btn-sm btn-update-active action-btn" data-id="${svc.id}" data-action="update">⚡ Update Available</button>`;
-            } else {
-                updateBtnHtml = `<button type="button" class="btn btn-sm btn-uptodate action-btn" data-id="${svc.id}" data-action="update" title="Click to Force Update">✓ Up to Date</button>`;
+                const isUpdatingThis = activeAction === 'update';
+                updateBtnHtml = `<button type="button" class="btn btn-sm btn-accent action-btn ${isCardActive ? 'disabled-btn' : ''}" data-id="${svc.id}" data-action="update" ${isCardActive ? 'disabled' : ''}>${isUpdatingThis ? '<span class="btn-spinner"></span> UPDATING...' : '⚡ Update'}</button>`;
             }
 
-            const isTerminalOpen = inlineTerminalVisible[svc.id] || false;
+            const githubHtml = svc.github_url ? `<div><strong style="color:var(--text-primary)">Repository:</strong> <a href="${svc.github_url}" target="_blank" class="service-url-link">🐙 GitHub Repo ↗</a></div>` : '';
+            const isTerminalOpen = activeAction || inlineTerminalVisible[svc.id];
             const existingLog = inlineTerminalLogs[svc.id] || '';
 
-            const githubHtml = svc.github_url ? `<div><strong style="color:var(--text-primary)">GitHub:</strong> <a href="${svc.github_url}" target="_blank" class="service-github-link">🐙 ${svc.github_url.replace('https://github.com/', '')} ↗</a></div>` : '';
+            const startBtnHtml = !isRunning ? `<button type="button" class="btn btn-sm btn-primary action-btn ${isCardActive ? 'disabled-btn' : ''}" data-id="${svc.id}" data-action="start" ${isCardActive ? 'disabled' : ''}>${activeAction === 'start' ? '<span class="btn-spinner"></span> STARTING...' : 'Start'}</button>` : '';
+            const stopBtnHtml = isRunning ? `<button type="button" class="btn btn-sm btn-danger action-btn ${isCardActive ? 'disabled-btn' : ''}" data-id="${svc.id}" data-action="stop" ${isCardActive ? 'disabled' : ''}>${activeAction === 'stop' ? '<span class="btn-spinner"></span> STOPPING...' : 'Stop'}</button>` : '';
+            const restartBtnHtml = `<button type="button" class="btn btn-sm btn-warning action-btn ${isCardActive ? 'disabled-btn' : ''}" data-id="${svc.id}" data-action="restart" ${isCardActive ? 'disabled' : ''}>${activeAction === 'restart' ? '<span class="btn-spinner"></span> RESTARTING...' : 'Restart'}</button>`;
+            const logsBtnHtml = `<button type="button" class="btn btn-sm btn-secondary action-btn ${isCardActive ? 'disabled-btn' : ''}" data-id="${svc.id}" data-action="logs" ${isCardActive ? 'disabled' : ''}>${activeAction === 'logs' ? '<span class="btn-spinner"></span> LOGS...' : '📄 Logs'}</button>`;
 
             card.innerHTML = `
                 <div>
@@ -302,11 +322,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
 
                 <div class="service-actions">
-                    ${!isRunning ? `<button type="button" class="btn btn-sm btn-primary action-btn" data-id="${svc.id}" data-action="start">Start</button>` : ''}
-                    ${isRunning ? `<button type="button" class="btn btn-sm btn-danger action-btn" data-id="${svc.id}" data-action="stop">Stop</button>` : ''}
-                    <button type="button" class="btn btn-sm btn-warning action-btn" data-id="${svc.id}" data-action="restart">Restart</button>
+                    ${startBtnHtml}
+                    ${stopBtnHtml}
+                    ${restartBtnHtml}
                     ${updateBtnHtml}
-                    <button type="button" class="btn btn-sm btn-secondary action-btn" data-id="${svc.id}" data-action="logs">📄 Logs</button>
+                    ${logsBtnHtml}
                 </div>
 
                 <!-- Inline Console / Log Panel -->
@@ -323,6 +343,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
             grid.appendChild(card);
+
+            const box = document.getElementById(`terminal-box-${svc.id}`);
+            if (box && existingLog) {
+                scrollTerminalToBottom(box);
+            }
         });
 
         // Event listeners for service action buttons
@@ -389,6 +414,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function triggerServiceAction(serviceId, action, clickedBtn) {
+        activeActions[serviceId] = action;
+
         const termElement = document.getElementById(`inline-terminal-${serviceId}`);
         const termBox = document.getElementById(`terminal-box-${serviceId}`);
 
@@ -417,9 +444,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 inlineTerminalLogs[serviceId] = initMsg;
             }
             termBox.textContent = inlineTerminalLogs[serviceId];
-            termBox.scrollTop = termBox.scrollHeight;
+            scrollTerminalToBottom(termBox);
         }
 
+        let isSuccess = false;
         try {
             const res = await fetch(`/manager/api/services/${serviceId}/${action}`, {
                 method: 'POST'
@@ -435,28 +463,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 inlineTerminalLogs[serviceId] += chunk;
                 if (termBox) {
                     termBox.textContent = inlineTerminalLogs[serviceId];
-                    termBox.scrollTop = termBox.scrollHeight;
+                    scrollTerminalToBottom(termBox);
                 }
             }
 
-            if (res.ok) {
+            isSuccess = res.ok;
+        } catch (e) {
+            const errChunk = `\nError executing action: ${e.message}\n`;
+            inlineTerminalLogs[serviceId] += errChunk;
+            if (termBox) {
+                termBox.textContent = inlineTerminalLogs[serviceId];
+                scrollTerminalToBottom(termBox);
+            }
+            isSuccess = false;
+        } finally {
+            delete activeActions[serviceId];
+
+            if (isSuccess) {
                 const actionTitle = action.charAt(0).toUpperCase() + action.slice(1);
                 showToast('success', `${serviceId} ${actionTitle} complete!`);
             } else {
                 showToast('error', `${serviceId} ${action} failed.`);
             }
 
-            fetchServices();
-            fetchSystemStats();
-        } catch (e) {
-            const errChunk = `\nError executing action: ${e.message}\n`;
-            inlineTerminalLogs[serviceId] += errChunk;
-            if (termBox) {
-                termBox.textContent = inlineTerminalLogs[serviceId];
-                termBox.scrollTop = termBox.scrollHeight;
-            }
-            showToast('error', `Error executing ${action} on ${serviceId}`);
-        } finally {
             if (cardButtons) {
                 cardButtons.forEach(b => {
                     b.disabled = false;
@@ -466,6 +495,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (clickedBtn) {
                 clickedBtn.innerHTML = origBtnHtml;
             }
+
+            fetchServices();
+            fetchSystemStats();
         }
     }
 });
