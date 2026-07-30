@@ -3,8 +3,12 @@ FROM python:3.11-slim
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git docker.io docker-compose curl procps \
+    git curl procps \
     && rm -rf /var/lib/apt/lists/*
+
+# Copy docker CLI & docker-compose static binaries
+COPY --from=docker:cli /usr/local/bin/docker /usr/local/bin/docker
+COPY --from=docker/compose:latest /docker-compose /usr/local/bin/docker-compose
 
 # Copy uv binary for fast package installation
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
