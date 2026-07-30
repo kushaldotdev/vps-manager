@@ -302,10 +302,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const isCardActive = Boolean(activeAction);
 
             let updateBtnHtml = '';
-            if (svc.type === 'docker' || svc.type === 'compose_dir' || svc.update_available) {
+            if (svc.update_available) {
                 const isUpdatingThis = activeAction === 'update';
-                const activeClass = svc.update_available ? 'btn-update-active' : 'btn-outline';
-                updateBtnHtml = `<button type="button" class="btn btn-sm ${activeClass} action-btn ${isCardActive ? 'disabled-btn' : ''}" data-id="${svc.id}" data-action="update" ${isCardActive ? 'disabled' : ''}>${isUpdatingThis ? '<span class="btn-spinner"></span> UPDATING...' : '⚡ Update'}</button>`;
+                updateBtnHtml = `<button type="button" class="btn btn-sm btn-update-active action-btn ${isCardActive ? 'disabled-btn' : ''}" data-id="${svc.id}" data-action="update" ${isCardActive ? 'disabled' : ''}>${isUpdatingThis ? '<span class="btn-spinner"></span> UPDATING...' : '⚡ Update'}</button>`;
+            } else if (svc.type === 'docker' || svc.type === 'compose_dir') {
+                updateBtnHtml = `<button type="button" class="btn btn-sm btn-uptodate disabled-btn" disabled>✓ Up to date</button>`;
             }
 
             const githubHtml = svc.github_url ? `<div><strong style="color:var(--text-primary)">Repository:</strong> <a href="${svc.github_url}" target="_blank" class="service-url-link">🐙 GitHub Repo ↗</a></div>` : '';
